@@ -50,4 +50,39 @@
 @media(min-width:1600px){.content{padding-top:45px}.welcome{min-height:290px}.welcome h2{font-size:40px}.zen{margin-right:40px}.stats article{padding:25px}.stats{margin:28px 0}}
 @media(max-width:1200px){aside{width:210px;padding:30px 15px}main{margin-left:210px;width:calc(100% - 210px)}.content{padding:30px 25px}header{padding:0 25px}.columns{grid-template-columns:1fr}.therapists{display:none}.stats{gap:10px}.stats article{padding:16px}.stats .revenue strong{font-size:20px}.subtitle{max-width:340px}.service-grid{gap:12px}.service-card{padding:22px}}
 @media(max-width:760px){aside{transform:translateX(-100%);transition:transform .2s;width:250px;box-shadow:10px 0 40px #17322622}aside.open{transform:translateX(0)}main{margin-left:0;width:100%}.mobile-menu{display:block;padding:0;margin-right:6px}header{height:64px;padding:0 20px}.header-right{gap:14px}.bell{display:none}.content{padding:24px 18px}.heading{align-items:flex-start;gap:10px;flex-wrap:wrap}h1{font-size:28px}.subtitle{font-size:11px;max-width:100%}.heading>.primary{margin-top:7px}.welcome{padding:26px 23px;min-height:248px}.welcome h2{font-size:30px}.welcome p{max-width:205px}.zen{position:absolute;right:-50px;bottom:25px;opacity:.48;width:210px;height:190px;pointer-events:none}.welcome>div:first-child{position:relative;z-index:2}.stats{grid-template-columns:1fr 1fr;margin:18px 0}.stats article{padding:17px}.stats strong{font-size:27px}.stats .revenue strong{font-size:21px;margin-top:22px}.stats p{font-size:8px}.columns{gap:16px}.panel-heading{padding:20px 16px}.search{margin:0 16px 12px}th,td{padding:13px}.table-footer{padding:15px 13px}.service-grid{grid-template-columns:1fr}.service-card{padding:25px}.desktop{display:none}footer{flex-wrap:wrap;line-height:1.8}.demo{font-size:8px}.therapists{display:block}.modal{padding:6px 20px 20px}}
+
+/* Readable, stronger typography across desktop and mobile. */
+:global(body){font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:500;color:#203c2c}
+h1,.welcome h2,.brand strong,.service-card h2,.modal h2,.care h3,.portrait,.service-number{font-family:Arial,Helvetica,sans-serif;font-weight:750;letter-spacing:-.5px}
+h1{font-size:32px}.brand strong{font-size:28px}.welcome h2{font-size:34px}
+nav button,.settings,.profile{font-size:14px;font-weight:650;color:#4d6354}
+nav button.active{font-weight:750}
+.workspace{font-size:12px}.workspace small,.profile small{font-size:12px;color:#65745f}
+.navlabel,.eyebrow{font-size:11px;font-weight:750;color:#617453}
+.subtitle,.welcome p,.panel-heading p,.service-card p,.form-note{font-size:13px;font-weight:500;color:#586d50}
+.primary,.outline,.textbutton{font-size:13px;font-weight:700}
+.pill{font-size:10px;font-weight:700;color:#536b3c}
+.welcome button{font-size:13px;font-weight:750}
+.stats article>div{font-size:12px;font-weight:650;color:#53694c}
+.stats strong{font-weight:750}.stats strong small{font-size:12px;font-weight:600;color:#61734f}
+.stats p{font-size:11px;color:#64764f;font-weight:550}
+.panel-heading h2{font-size:17px;font-weight:750}
+.search input{font-size:13px;color:#354f38}
+th{font-size:11px;font-weight:750;color:#5d704c}
+td,td strong{font-size:13px}td strong{font-weight:700}
+td small,.wib{font-size:11px;color:#667653;font-weight:500}
+.initial{font-size:11px;font-weight:750;color:#536c3f}
+.status{font-size:11px;font-weight:700}
+.status.done{color:#416d32}.status.ongoing{color:#806419}.status.waiting{color:#6d654c}
+.table-footer{font-size:11px;color:#63744f;font-weight:550}
+.therapist strong{font-size:13px;font-weight:750}
+.therapist small{font-size:11px;color:#62734e}
+.available{font-size:11px;font-weight:650;color:#59713c}
+.care p{font-size:12px;color:#626c43}
+.modal label{font-size:13px;font-weight:650;color:#4d6345}
+.modal input,.modal select{font-size:14px}
+.booking-total{font-size:14px}.demo{font-size:11px;font-weight:700;color:#60703d}
+footer{font-size:11px;color:#687957}.zen>span{font-size:9px;font-weight:650;color:#637648}
+@media(max-width:760px){h1{font-size:28px}.welcome h2{font-size:29px}.subtitle{font-size:13px}.stats p{font-size:11px}.demo{font-size:10px}.primary{font-size:13px}.table-footer{font-size:10px}}
+
 </style>
