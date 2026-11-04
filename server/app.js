@@ -21,7 +21,7 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
    const db=makeClient(token);
    const {data,error}=await db.auth.getUser(token);
    if(error||!data.user||!data.user.email_confirmed_at)return res.status(401).json({error:'Sesi tidak valid atau email belum diverifikasi. Silakan login kembali.'});
-   const profileResult=await db.from('profiles').select('id,email,full_name,phone,role,active').eq('id',data.user.id).single();
+   const profileResult=await db.from('profiles').select('id,email,full_name,phone,role,active,is_demo').eq('id',data.user.id).single();
    if(profileResult.error||!profileResult.data?.active)return res.status(403).json({error:'Akun belum aktif atau akses dinonaktifkan. Hubungi administrator.'});
    req.db=db;req.profile=profileResult.data;next();
   }catch{res.status(503).json({error:'Layanan login sementara tidak tersedia.'});}

@@ -31,3 +31,7 @@ Database project: `tpdcetrvlpemqcibokmb`, Singapore. `supabase/rbac-schema.sql` 
 `tests/rbac.test.js` runs five Express authorization and input-boundary tests. `tests/rls.sql` tests real PostgreSQL policies and triggers in a transaction that rolls back all fixtures, including auth users. It covers owner verification, metadata privilege escalation, customer/therapist row isolation, role tampering, assignment, overlaps, valid/invalid session transitions, immediate inactive-user denial, and anonymous access denial. Only run against this project's intended schema.
 
 The dashboard shows up to 300 most recent authorized reservations; account management shows up to 500 recent accounts and 100 recent audit entries. No payment gateway or clinical notes are included.
+
+## Demo accounts
+
+Three verified accounts are provisioned separately as demo administrator, therapist, and customer. Credentials are supplied to the owner outside the source repository. Demo profiles carry a protected `is_demo` flag. RLS and privileged account/assignment functions enforce separation in both directions, including direct Data API calls. Demo accounts cannot promote, deactivate, read or book for real accounts, and cannot change their own partition. Shared demo data is intended for practice only. `tests/demo-isolation.sql` verifies this against PostgreSQL with rollback fixtures.
