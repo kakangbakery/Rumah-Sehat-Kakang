@@ -33,8 +33,29 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   const {error}=await req.db.from('profiles').update({full_name:full_name.trim(),phone}).eq('id',req.profile.id);
   if(error)return safeError(res,error);res.json({ok:true});
  });
+ async function saveService(req,res){
+  const {name,price,duration_minutes}=req.body||{};
+  if(typeof name!=='string'||!name.trim()||name.trim().length>100
+   ||!Number.isInteger(price)||price<0||price>2147483647
+   ||!Number.isInteger(duration_minutes)||duration_minutes<1||duration_minutes>1440){
+   return res.status(400).json({error:'Isi nama, harga dalam rupiah, dan durasi 1–1440 menit.'});
+  }
+  const fields={name:name.trim(),price,duration_minutes};
+  const id=req.params.id;
+  if(id&&!uuid.test(id))return res.status(400).json({error:'Layanan tidak valid.'});
+  const query=id
+   ?req.db.from('services').update(fields).eq('id',id)
+   :req.db.from('services').insert({...fields,is_demo:req.profile.is_demo});
+  const {data,error}=await query.select('id').maybeSingle();
+  if(error?.code==='23505')return res.status(409).json({error:'Nama layanan sudah digunakan.'});
+  if(error)return safeError(res,error);
+  if(!data)return res.status(404).json({error:'Layanan tidak ditemukan.'});
+  return res.status(id?200:201).json({id:data.id});
+ }
+ app.post('/api/services',allowRoles('administrator'),saveService);
+ app.patch('/api/services/:id',allowRoles('administrator'),saveService);
  app.get('/api/services',async(req,res)=>{
-  const {data,error}=await req.db.from('services').select('id,name,duration_minutes,price,description').eq('active',true).order('price');
+  const {data,error}=await req.db.from('services').select('id,name,duration_minutes,price,description').eq('active',true).eq('is_demo',req.profile.is_demo).order('price');
   if(error)return safeError(res,error);res.json({services:data});
  });
  app.get('/api/appointments',async(req,res)=>{
