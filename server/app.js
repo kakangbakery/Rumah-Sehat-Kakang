@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto';
 import express from 'express';
 import {rateLimit} from 'express-rate-limit';
 import {createClient} from '@supabase/supabase-js';
@@ -87,19 +88,21 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   const {data,error}=await req.db.from('profiles').select('id,email,full_name,phone,role,active,created_at').order('created_at',{ascending:false}).limit(500);
   if(error)return safeError(res,error);res.json({accounts:data});
  });
- app.post('/api/accounts/therapists',allowRoles('administrator'),async(req,res)=>{
+ async function createStaff(req,res){
   const {full_name,email,initial_password}=req.body||{};
   if([full_name,email,initial_password].some(value=>typeof value!=='string')){
    return res.status(400).json({error:'Isi nama, email, dan password awal.'});
   }
-  const {data,error}=await req.db.rpc('create_therapist',{full_name,email,initial_password});
+  const {data,error}=await req.db.rpc(req.path.endsWith('/referrals')?'create_referral':'create_therapist',{full_name,email,initial_password});
   if(error?.code==='23505')return res.status(409).json({error:'Email tidak tersedia. Gunakan email lain.'});
   if(error?.code==='22023')return res.status(400).json({error:'Periksa nama dan email. Password minimal 8 karakter dan maksimal 72 byte. Akun demo memakai email @kakang.test.'});
   if(error)return safeError(res,error);
   res.status(201).json({id:data});
- });
+ }
+ app.post('/api/accounts/therapists',allowRoles('administrator'),createStaff);
+ app.post('/api/accounts/referrals',allowRoles('administrator'),createStaff);
  app.patch('/api/accounts/:id',allowRoles('administrator'),async(req,res)=>{
-  if(!uuid.test(req.params.id)||!['administrator','therapist','customer'].includes(req.body?.role)||typeof req.body?.active!=='boolean')return res.status(400).json({error:'Peran atau status akun tidak valid.'});
+  if(!uuid.test(req.params.id)||!['administrator','therapist','customer','referral'].includes(req.body?.role)||typeof req.body?.active!=='boolean')return res.status(400).json({error:'Peran atau status akun tidak valid.'});
   const {error}=await req.db.rpc('manage_account',{target_id:req.params.id,new_role:req.body.role,is_active:req.body.active});
   if(error)return safeError(res,error);res.json({ok:true});
  });
@@ -107,6 +110,21 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   if(!uuid.test(req.params.id)||!uuid.test(req.body?.therapist_id))return res.status(400).json({error:'Pilih terapis yang valid.'});
   const {error}=await req.db.rpc('assign_therapist',{appointment_id:req.params.id,new_therapist_id:req.body.therapist_id});
   if(error)return safeError(res,error);res.json({ok:true});
+ });
+ app.get('/api/finance',allowRoles('administrator'),async(req,res)=>{
+  const {data,error}=await req.db.from('finance_allocations').select('items,revision').single();
+  if(error)return safeError(res,error);
+  res.json(data);
+ });
+ app.put('/api/finance',allowRoles('administrator'),async(req,res)=>{
+  const {items,revision}=req.body||{};
+  if(!uuid.test(revision)||!Array.isArray(items))return res.status(400).json({error:'Pembagian pemasukan tidak valid.'});
+  const {data,error}=await req.db.from('finance_allocations')
+   .update({items,revision:randomUUID()}).eq('revision',revision).select('items,revision').maybeSingle();
+  if(error?.code==='23514')return res.status(400).json({error:'Periksa nama pos dan persentase. Total maksimal 100%.'});
+  if(error)return safeError(res,error);
+  if(!data)return res.status(409).json({error:'Pembagian sudah berubah. Muat ulang halaman sebelum menyimpan.'});
+  res.json(data);
  });
  app.get('/api/role-audit',allowRoles('administrator'),async(req,res)=>{
   const {data,error}=await req.db.from('role_audit').select('*').order('created_at',{ascending:false}).limit(100);
