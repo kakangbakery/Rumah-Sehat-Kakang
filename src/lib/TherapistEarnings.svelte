@@ -2,6 +2,9 @@
  import {onMount} from 'svelte';
  import {api} from './auth.js';
 
+ export let admin=false;
+ let therapists=[], selected=null;
+
  const timeZone='Asia/Jakarta';
  const parts=new Intl.DateTimeFormat('en-GB',{year:'numeric',month:'2-digit',timeZone}).formatToParts();
  const currentMonth=parts.find(part=>part.type==='year').value+'-'+parts.find(part=>part.type==='month').value;
@@ -15,7 +18,12 @@
   if(!month)return;
   busy=true;
   try{
-   report=await api('/therapist/earnings?month='+encodeURIComponent(month));
+   const query='?month='+encodeURIComponent(month);
+   if(admin && !selected){
+    therapists=await api('/finance/therapist-fees'+query);
+   }else{
+    report=await api(admin?'/finance/therapist-fees'+query+'&therapist='+selected.id:'/therapist/earnings'+query);
+   }
   }catch(e){error=e.message;}finally{busy=false;}
  }
 
@@ -23,13 +31,22 @@
 </script>
 
 <section aria-label="Pendapatan terapis">
- <label>Periode <input type="month" bind:value={month} max={currentMonth} disabled={busy} onchange={load}/></label>
+ {#if admin}<h2>Fee Terapis</h2>{/if}
+ <label>Periode <input type="month" bind:value={month} max={currentMonth} disabled={busy} onchange={()=>{selected=null;therapists=[];load();}}/></label>
  {#if error}<p role="alert">{error} <button onclick={load}>Coba lagi</button></p>{/if}
  {#if busy}<p role="status">Memuat pendapatan…</p>{/if}
+ {#if admin && selected}
+  <button disabled={busy} onclick={()=>{selected=null;load();}}>Kembali ke daftar terapis</button>
+  <h2>{selected.name}</h2>
+ {:else if admin && !busy && !error}
+  {#each therapists as therapist (therapist.id)}
+   <button class="therapist" onclick={()=>{selected=therapist;load();}}>{therapist.name}</button>
+  {:else}<p>Belum ada terapis dengan reservasi selesai pada periode ini.</p>{/each}
+ {/if}
  {#if report}
   <div class="total"><span>Total fee periode</span><strong>{report.rate===null?'—':money.format(report.total)}</strong></div>
-  <div class="row"><span>Kasbon</span><strong>{money.format(0)}</strong></div>
-  <div class="row"><span>Bonus</span><strong>{money.format(0)}</strong></div>
+  {#if !admin}<div class="row"><span>Kasbon</span><strong>{money.format(0)}</strong></div>
+  <div class="row"><span>Bonus</span><strong>{money.format(0)}</strong></div>{/if}
   <h2>Reservasi selesai</h2>
   {#if report.rate===null}
    <p>Pos Fee Terapis belum diterapkan untuk periode ini.</p>
@@ -55,5 +72,6 @@
  .total,.row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
  .total{border-radius:10px;background:#00543b;color:#fff;padding:15px}
  .row{padding:12px 0;border-bottom:1px solid #e4ecdf}
+ .therapist{display:block;width:100%;text-align:left;font-weight:750;margin-top:8px;min-height:44px}
  small{display:block;margin-top:4px}
 </style>

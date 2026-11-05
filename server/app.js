@@ -166,6 +166,18 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   if(error)return safeError(res,error);
   res.json(data);
  });
+ app.get('/api/finance/therapist-fees',allowRoles('administrator'),async(req,res)=>{
+  const {month,therapist}=req.query;
+  if(typeof month!=='string'||!/^20[0-9]{2}-(0[1-9]|1[0-2])$/.test(month)){
+   return res.status(400).json({error:'Pilih periode yang valid.'});
+  }
+  if(therapist!==undefined&&(typeof therapist!=='string'||!uuid.test(therapist))){
+   return res.status(400).json({error:'Pilih terapis yang valid.'});
+  }
+  const {data,error}=await req.db.rpc('admin_therapist_fees',{month_start:month+'-01',target:therapist??null});
+  if(error)return safeError(res,error);
+  res.json(data);
+ });
  app.post('/api/finance/apply',allowRoles('administrator'),async(req,res)=>{
   if(!uuid.test(req.body?.revision))return res.status(400).json({error:'Simpan simulasi terlebih dahulu.'});
   const {data,error}=await req.db.rpc('apply_finance_simulation',{expected_revision:req.body.revision});

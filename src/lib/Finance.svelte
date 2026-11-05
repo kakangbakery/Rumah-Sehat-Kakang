@@ -1,5 +1,6 @@
 <script>
  import {onMount} from 'svelte';
+ import TherapistEarnings from './TherapistEarnings.svelte';
  import Income from './Income.svelte';
  import {api} from './auth.js';
 
@@ -52,6 +53,7 @@
  <button class:save={view==='allocation'} aria-pressed={view==='allocation'} onclick={()=>view='allocation'}>Alokasi Dana</button>
  <button class:save={view==='income'} aria-pressed={view==='income'} onclick={()=>view='income'}>Pemasukan</button>
  <button class:save={view==='distribution'} aria-pressed={view==='distribution'} onclick={()=>view='distribution'}>Rincian Pembagian</button>
+ <button class:save={view==='therapist-fees'} aria-pressed={view==='therapist-fees'} onclick={()=>view='therapist-fees'}>Fee Terapis</button>
 </nav>
 
 {#if view==='simulation'}
@@ -99,6 +101,8 @@
  {:else if error}<p class="error" role="alert">{error}</p>
  {:else}<p>Memuat alokasi dana…</p>{/if}
 </section>
+{:else if view==='therapist-fees'}
+ <TherapistEarnings admin/>
 {:else if view==='income'||view==='distribution'}
 {#key view}
  <Income simulation={saved} showAllocation={view==='distribution'} bind:month={period}/>
