@@ -54,6 +54,13 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
  }
  app.post('/api/services',allowRoles('administrator'),saveService);
  app.patch('/api/services/:id',allowRoles('administrator'),saveService);
+ app.delete('/api/services/:id',allowRoles('administrator'),async(req,res)=>{
+  if(!uuid.test(req.params.id))return res.status(400).json({error:'Layanan tidak valid.'});
+  const {data,error}=await req.db.rpc('archive_service',{service_id:req.params.id});
+  if(error)return safeError(res,error);
+  if(!data)return res.status(404).json({error:'Layanan tidak ditemukan.'});
+  res.json({ok:true});
+ });
  app.get('/api/services',async(req,res)=>{
   const {data,error}=await req.db.from('services').select('id,name,duration_minutes,price,description').eq('active',true).eq('is_demo',req.profile.is_demo).order('price');
   if(error)return safeError(res,error);res.json({services:data});
