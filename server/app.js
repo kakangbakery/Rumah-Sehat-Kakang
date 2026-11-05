@@ -129,6 +129,22 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   if(!data)return res.status(409).json({error:'Pembagian sudah berubah. Muat ulang halaman sebelum menyimpan.'});
   res.json(data);
  });
+ app.get('/api/finance/income',allowRoles('administrator'),async(req,res)=>{
+  const month=req.query.month;
+  if(typeof month!=='string'||!/^20[0-9]{2}-(0[1-9]|1[0-2])$/.test(month)){
+   return res.status(400).json({error:'Pilih periode yang valid.'});
+  }
+  const {data,error}=await req.db.rpc('finance_income_report',{month_start:month+'-01'});
+  if(error)return safeError(res,error);
+  res.json(data);
+ });
+ app.post('/api/finance/apply',allowRoles('administrator'),async(req,res)=>{
+  if(!uuid.test(req.body?.revision))return res.status(400).json({error:'Simpan simulasi terlebih dahulu.'});
+  const {data,error}=await req.db.rpc('apply_finance_simulation',{expected_revision:req.body.revision});
+  if(error)return safeError(res,error);
+  if(!data)return res.status(409).json({error:'Simulasi sudah berubah. Muat ulang halaman sebelum menerapkan.'});
+  res.json({ok:true});
+ });
  app.get('/api/role-audit',allowRoles('administrator'),async(req,res)=>{
   const {data,error}=await req.db.from('role_audit').select('*').order('created_at',{ascending:false}).limit(100);
   if(error)return safeError(res,error);res.json({audit:data});

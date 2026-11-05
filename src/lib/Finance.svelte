@@ -1,5 +1,6 @@
 <script>
  import {onMount} from 'svelte';
+ import Income from './Income.svelte';
  import {api} from './auth.js';
 
  let view='',saved=null;
@@ -49,6 +50,7 @@
 <nav class="finance-menu" aria-label="Menu Keuangan">
  <button class:save={view==='simulation'} aria-pressed={view==='simulation'} onclick={()=>view='simulation'}>Simulasi</button>
  <button class:save={view==='allocation'} aria-pressed={view==='allocation'} onclick={()=>view='allocation'}>Alokasi Dana</button>
+ <button class:save={view==='income'} aria-pressed={view==='income'} onclick={()=>view='income'}>Pemasukan</button>
 </nav>
 
 {#if view==='simulation'}
@@ -96,6 +98,8 @@
  {:else if error}<p class="error" role="alert">{error}</p>
  {:else}<p>Memuat alokasi dana…</p>{/if}
 </section>
+{:else if view==='income'}
+<Income simulation={saved}/>
 {/if}
 
 <style>
