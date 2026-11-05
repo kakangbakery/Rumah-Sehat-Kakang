@@ -3,7 +3,7 @@
  import Income from './Income.svelte';
  import {api} from './auth.js';
 
- let view='',saved=null;
+ let view='',saved=null,period='';
  let items=[],revision='',income=0,busy=false,error='',message='';
  const currency=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
  const percentageTotal=rows=>rows.reduce((sum,item)=>sum+Math.round((item.percent??0)*100),0)/100;
@@ -51,6 +51,7 @@
  <button class:save={view==='simulation'} aria-pressed={view==='simulation'} onclick={()=>view='simulation'}>Simulasi</button>
  <button class:save={view==='allocation'} aria-pressed={view==='allocation'} onclick={()=>view='allocation'}>Alokasi Dana</button>
  <button class:save={view==='income'} aria-pressed={view==='income'} onclick={()=>view='income'}>Pemasukan</button>
+ <button class:save={view==='distribution'} aria-pressed={view==='distribution'} onclick={()=>view='distribution'}>Rincian Pembagian</button>
 </nav>
 
 {#if view==='simulation'}
@@ -98,8 +99,10 @@
  {:else if error}<p class="error" role="alert">{error}</p>
  {:else}<p>Memuat alokasi dana…</p>{/if}
 </section>
-{:else if view==='income'}
-<Income simulation={saved}/>
+{:else if view==='income'||view==='distribution'}
+{#key view}
+ <Income simulation={saved} showAllocation={view==='distribution'} bind:month={period}/>
+{/key}
 {/if}
 
 <style>

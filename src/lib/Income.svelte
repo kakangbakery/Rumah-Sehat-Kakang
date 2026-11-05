@@ -2,6 +2,8 @@
  import {onMount} from 'svelte';
  import {api} from './auth.js';
  export let simulation=null;
+ export let showAllocation=false;
+ export let month='';
 
  const monthParts=new Intl.DateTimeFormat('en-GB',{year:'numeric',month:'2-digit',timeZone:'Asia/Jakarta'}).formatToParts();
  const currentMonth=monthParts.find(part=>part.type==='year').value+'-'+monthParts.find(part=>part.type==='month').value;
@@ -9,9 +11,13 @@
  const date=day=>dateFormat.format(new Date(day+'T00:00:00+07:00'));
  const currency=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
  const share=(amount,percent)=>Math.floor(amount*Math.round(percent*100)/10000);
- let month=currentMonth,report=null,busy=false,error='',notice='';
+ let report=null,busy=false,error='',notice='';
+ $: title=showAllocation?'Rincian Pembagian':'Pemasukan';
 
- onMount(loadReport);
+ onMount(()=>{
+  if(!month)month=currentMonth;
+  loadReport();
+ });
 
  async function loadReport(){
   busy=true;
@@ -36,13 +42,13 @@
  }
 </script>
 
-<section aria-label="Pemasukan">
- <h2>Pemasukan</h2>
+<section aria-label={title}>
+ <h2>{title}</h2>
  <div class="toolbar">
   <label>Periode
    <input type="month" bind:value={month} max={currentMonth} disabled={busy} onchange={()=>{notice='';loadReport();}}/>
   </label>
-  {#if month===currentMonth}
+  {#if !showAllocation && month===currentMonth}
    <button disabled={busy||!simulation||!report} onclick={apply}>Terapkan Simulasi</button>
   {/if}
  </div>
@@ -51,16 +57,19 @@
  {#if report}
   <p>{date(report.start)} – {date(report.end)}</p>
   <div class="total">Total periode <strong>{currency.format(report.total)}</strong></div>
-  <h3>Pemasukan harian</h3>
-  {#each report.days as day}
-   <div class="row"><span>{date(day.day)}<small>{day.bookings} reservasi selesai</small></span><strong>{currency.format(day.total)}</strong></div>
-  {:else}<p>Belum ada reservasi selesai pada periode ini.</p>{/each}
+  {#if showAllocation}
   <h3>Pembagian yang diterapkan</h3>
   {#each report.items as item}
    <div class="row"><span>{item.name}<small>{item.percent.toLocaleString('id-ID')}%</small></span><strong>{currency.format(share(report.total,item.percent))}</strong></div>
   {:else}<p>Belum ada pos pembagian.</p>{/each}
   <div class="row"><span>Belum terbagi</span><strong>{currency.format(report.total-report.items.reduce((sum,item)=>sum+share(report.total,item.percent),0))}</strong></div>
- {:else if busy}<p>Memuat pemasukan…</p>{/if}
+  {:else}
+  <h3>Pemasukan harian</h3>
+  {#each report.days as day}
+   <div class="row"><span>{date(day.day)}<small>{day.bookings} reservasi selesai</small></span><strong>{currency.format(day.total)}</strong></div>
+  {:else}<p>Belum ada reservasi selesai pada periode ini.</p>{/each}
+  {/if}
+ {:else if busy}<p>Memuat laporan…</p>{/if}
 </section>
 
 <style>
