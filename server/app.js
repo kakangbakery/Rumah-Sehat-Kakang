@@ -68,15 +68,34 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
  });
  app.get('/api/appointments',async(req,res)=>{
   // RLS restricts both the main rows and joined customer/therapist profiles.
-  const {data,error}=await req.db.from('appointments').select('id,customer_id,therapist_id,starts_at,duration_minutes,price,status,service:services(name),customer:profiles!appointments_customer_id_fkey(full_name,phone),therapist:profiles!appointments_therapist_id_fkey(full_name)').order('starts_at',{ascending:false}).limit(300);
+  const {data,error}=await req.db.from('appointments').select('id,customer_id,therapist_id,starts_at,duration_minutes,price,status,booking_name,booking_address,booking_phone,booking_notes,service:services(name),customer:profiles!appointments_customer_id_fkey(full_name,phone),therapist:profiles!appointments_therapist_id_fkey(full_name)').order('starts_at',{ascending:false}).limit(300);
   if(error)return safeError(res,error);res.json({appointments:data});
  });
  app.post('/api/appointments',allowRoles('administrator','customer'),async(req,res)=>{
-  const {service_id,starts_at,customer_id}=req.body||{};
-  const customerId=req.profile.role==='customer'?req.profile.id:customer_id;
+  const {service_id,starts_at,customer_id,booking_name,booking_address,booking_phone,booking_notes}=req.body||{};
+  const selfBooking=req.profile.role==='customer';
+  const customerId=selfBooking?req.profile.id:(customer_id??null);
   const parsed=Date.parse(starts_at);
-  if(!uuid.test(service_id)||!uuid.test(customerId)||!Number.isFinite(parsed)||parsed<=Date.now())return res.status(400).json({error:'Pilih layanan, customer, dan waktu reservasi yang akan datang.'});
-  const {data,error}=await req.db.from('appointments').insert({service_id,starts_at:new Date(parsed).toISOString(),customer_id:customerId}).select('id').single();
+  if(!uuid.test(service_id)||(customerId!==null&&!uuid.test(customerId))||!Number.isFinite(parsed)||parsed<=Date.now()){
+   return res.status(400).json({error:'Pilih layanan dan waktu reservasi yang akan datang.'});
+  }
+  const contact={};
+  const hasDetails=customerId===null||[booking_name,booking_address,booking_phone,booking_notes].some(value=>value!==undefined);
+  if(hasDetails){
+   const name=selfBooking?(req.profile.full_name?.trim()||req.profile.email):booking_name;
+   if(typeof name!=='string'||!name.trim()||name.trim().length>100
+    ||typeof booking_address!=='string'||!booking_address.trim()||booking_address.trim().length>500
+    ||typeof booking_phone!=='string'||booking_phone.trim().length>25
+    ||!/^[+\d ()-]+$/.test(booking_phone.trim())||booking_phone.replace(/\D/g,'').length<7
+    ||(booking_notes!==undefined&&(typeof booking_notes!=='string'||booking_notes.trim().length>1000))){
+    return res.status(400).json({error:'Lengkapi nama, alamat, dan nomor telepon yang valid.'});
+   }
+   Object.assign(contact,{booking_name:name.trim(),booking_address:booking_address.trim(),
+    booking_phone:booking_phone.trim(),booking_notes:booking_notes?.trim()||null});
+  }
+  const {data,error}=await req.db.from('appointments').insert({
+   service_id,starts_at:new Date(parsed).toISOString(),customer_id:customerId,...contact
+  }).select('id').single();
   if(error)return safeError(res,error);res.status(201).json({appointment:data});
  });
  app.patch('/api/appointments/:id/status',allowRoles('administrator','therapist'),async(req,res)=>{
