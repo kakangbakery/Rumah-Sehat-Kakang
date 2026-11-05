@@ -112,15 +112,18 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   if(error)return safeError(res,error);res.json({ok:true});
  });
  app.get('/api/finance',allowRoles('administrator'),async(req,res)=>{
-  const {data,error}=await req.db.from('finance_allocations').select('items,revision').single();
+  const {data,error}=await req.db.from('finance_allocations').select('items,revision,income').single();
   if(error)return safeError(res,error);
   res.json(data);
  });
  app.put('/api/finance',allowRoles('administrator'),async(req,res)=>{
-  const {items,revision}=req.body||{};
+  const {items,revision,income}=req.body||{};
   if(!uuid.test(revision)||!Array.isArray(items))return res.status(400).json({error:'Pembagian pemasukan tidak valid.'});
+  if(income!==undefined&&(!Number.isInteger(income)||income<0||income>2147483647))return res.status(400).json({error:'Nominal simulasi tidak valid.'});
+  const changes={items,revision:randomUUID()};
+  if(income!==undefined)changes.income=income;
   const {data,error}=await req.db.from('finance_allocations')
-   .update({items,revision:randomUUID()}).eq('revision',revision).select('items,revision').maybeSingle();
+   .update(changes).eq('revision',revision).select('items,revision,income').maybeSingle();
   if(error?.code==='23514')return res.status(400).json({error:'Periksa nama pos dan persentase. Total maksimal 100%.'});
   if(error)return safeError(res,error);
   if(!data)return res.status(409).json({error:'Pembagian sudah berubah. Muat ulang halaman sebelum menyimpan.'});
