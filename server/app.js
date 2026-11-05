@@ -59,6 +59,17 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   const {data,error}=await req.db.from('profiles').select('id,email,full_name,phone,role,active,created_at').order('created_at',{ascending:false}).limit(500);
   if(error)return safeError(res,error);res.json({accounts:data});
  });
+ app.post('/api/accounts/therapists',allowRoles('administrator'),async(req,res)=>{
+  const {full_name,email,initial_password}=req.body||{};
+  if([full_name,email,initial_password].some(value=>typeof value!=='string')){
+   return res.status(400).json({error:'Isi nama, email, dan password awal.'});
+  }
+  const {data,error}=await req.db.rpc('create_therapist',{full_name,email,initial_password});
+  if(error?.code==='23505')return res.status(409).json({error:'Email tidak tersedia. Gunakan email lain.'});
+  if(error?.code==='22023')return res.status(400).json({error:'Periksa nama dan email. Password minimal 8 karakter dan maksimal 72 byte. Akun demo memakai email @kakang.test.'});
+  if(error)return safeError(res,error);
+  res.status(201).json({id:data});
+ });
  app.patch('/api/accounts/:id',allowRoles('administrator'),async(req,res)=>{
   if(!uuid.test(req.params.id)||!['administrator','therapist','customer'].includes(req.body?.role)||typeof req.body?.active!=='boolean')return res.status(400).json({error:'Peran atau status akun tidak valid.'});
   const {error}=await req.db.rpc('manage_account',{target_id:req.params.id,new_role:req.body.role,is_active:req.body.active});
