@@ -111,7 +111,7 @@
  {:else}<p>Memuat alokasi dana…</p>{/if}
 </section>
 {:else if view==='therapist-fees'}
- <TherapistEarnings admin onback={()=>openView('')}/>
+ <TherapistEarnings admin bind:month={period} onback={()=>openView('')}/>
 {:else if view==='income'||view==='distribution'}
 {#key view}
  <Income simulation={saved} showAllocation={view==='distribution'} bind:month={period}/>

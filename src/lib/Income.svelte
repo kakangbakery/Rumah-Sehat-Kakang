@@ -1,5 +1,6 @@
 <script>
  import {onMount} from 'svelte';
+ import PeriodPicker from './PeriodPicker.svelte';
  import {api} from './auth.js';
  export let simulation=null;
  export let showAllocation=false;
@@ -42,12 +43,10 @@
  }
 </script>
 
+<PeriodPicker bind:month disabled={busy} onchange={next=>{month=next;notice='';loadReport();}}/>
 <section aria-label={title}>
  <h2>{title}</h2>
  <div class="toolbar">
-  <label>Periode
-   <input type="month" bind:value={month} max={currentMonth} disabled={busy} onchange={()=>{notice='';loadReport();}}/>
-  </label>
   {#if !showAllocation && month===currentMonth}
    <button disabled={busy||!simulation||!report} onclick={apply}>Terapkan Simulasi</button>
   {/if}
@@ -77,9 +76,7 @@
  h2{margin:0 0 20px;font-size:19px}
  h3{margin-top:24px;font-size:16px}
  .toolbar,.row,.total{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
- label{display:grid;gap:7px;font-weight:750}
- input,button{padding:10px 12px;border:1px solid #b9cfba;border-radius:8px}
- input{background:#fff;color:#163c2a}
+ button{padding:10px 12px;border:1px solid #b9cfba;border-radius:8px}
  button{background:#00543b;color:#fff;font-weight:750;min-height:40px}
  .retry{background:#fff;color:#00543b}
  .row{padding:12px 0;border-bottom:1px solid #e4ecdf}

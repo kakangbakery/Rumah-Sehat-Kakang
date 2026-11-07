@@ -7,7 +7,7 @@
  import {supabase,api} from './auth.js';
  import {ROLE_LABEL,ROLE_PATH} from './config.js';
  export let expectedRole;
- let profile=null,loading=true,page='Ringkasan',notice='',failure='',busy=false;
+ let profile=null,loading=true,page='',notice='',failure='',busy=false;
  let appointments=[],accounts=[],services=[],search='',modal=false;
  let staffRole='therapist';
  let therapistModal=false,therapistName='',therapistEmail='',therapistPassword='';
@@ -30,7 +30,7 @@
  async function boot(initial=true){if(initial)loading=true;failure='';try{
   const result=await api('/me');
   if(result.profile.role!==expectedRole){window.location.replace(ROLE_PATH[result.profile.role]);return;}
-  profile=result.profile;if(profile.role==='referral')page='Profil Saya';name=profile.full_name;phone=profile.phone;
+  profile=result.profile;name=profile.full_name;phone=profile.phone;
   if(profile.role!=='referral')await loadData();
  }catch(e){failure=e.message;if(e.status===401||e.status===403||e.message.includes('login')){profile=null;appointments=[];accounts=[];await goto('/',{replaceState:true});}}finally{loading=false;}}
  async function loadData(){const r=await Promise.all([api('/appointments'),api('/services'),...(profile.role==='administrator'?[api('/accounts')]:[])]);appointments=r[0].appointments;services=r[1].services;if(r[2])accounts=r[2].accounts;}
@@ -98,11 +98,12 @@
 {#if loading}<div class="loading"><Leaf size={38}/><h1>Menyiapkan dashboard…</h1><p>Memeriksa sesi dan hak akses Anda.</p></div>{:else if !profile}<div class="loading"><h1>Login diperlukan</h1><p>{failure||'Masuk untuk melanjutkan.'}</p><a href="/">Ke halaman login</a></div>{:else}
 <div class="top-band" aria-hidden="true"></div>
 <div class="app"><main>
-{#if page!=='Keuangan'}<header class="account-head">
+{#if !page}<header class="account-head">
  <div class="identity"><div class="identity-copy"><a class="brand-name" href={ROLE_PATH[profile.role]} aria-label="HEIJO Reflexology"></a><div class="account-role">{ROLE_LABEL[profile.role]}</div><p class="account-name">{profile.full_name||'Akun Saya'}</p></div></div>
  <div class="account-actions">{#if !isReferral}<button class="icon-button" onclick={()=>{page='Reservasi';search='';}} aria-label="Cari reservasi"><Search size={23}/></button>{/if}<button class="icon-button refresh" disabled={busy} onclick={()=>act(async()=>{},'Data diperbarui.')} aria-label="Perbarui data"><RefreshCw size={22}/></button><button class="exit-button" disabled={busy} onclick={logout}><LogOut size={17}/><span>Keluar</span></button></div>
-</header>{/if}<div class="content" class:finance-screen={page==='Keuangan'}>
-{#if page!=='Keuangan'}<nav class="menu-grid" aria-label="Menu utama">{#each menu as item}<button class:active={page===item.name} aria-pressed={page===item.name} onclick={()=>{page=item.name;search='';window.scrollTo({top:0,behavior:'instant'});}}>{#if item.icon}<item.icon size={23}/>{/if}<span>{item.name}</span></button>{/each}</nav>
+</header>{/if}<div class="content" class:finance-screen={!!page}>
+{#if !page}<nav class="menu-grid" aria-label="Menu utama">{#each menu as item}<button class:active={page===item.name} aria-pressed={page===item.name} onclick={()=>{page=item.name;search='';window.scrollTo({top:0,behavior:'instant'});}}>{#if item.icon}<item.icon size={23}/>{/if}<span>{item.name}</span></button>{/each}</nav>{/if}
+{#if page && page!=='Keuangan'}<button class="feature-back" onclick={()=>{page='';window.scrollTo({top:0,behavior:'instant'});}}>← Menu utama</button>
 <div class="heading"><div><p class="eyebrow">HEIJO REFLEXOLOGY</p><h1>{page==='Ringkasan'?'Selamat datang, '+(profile.full_name||'Kakang'):page}<span class="gold">.</span></h1></div>{#if page==='Reservasi'&&!isTherapist}<button class="primary" onclick={openBooking}><Plus size={18}/>Reservasi baru</button>{:else if page==='Layanan'&&isAdmin}<button class="primary" onclick={()=>editService(null)}><Plus size={18}/>Tambah Layanan</button>{:else if page==='Kelola Akun'&&isAdmin}<button class="primary" onclick={()=>{failure='';staffRole='therapist';therapistModal=true;}}><Plus size={18}/>Tambah Terapis</button><button class="primary" onclick={()=>{failure='';staffRole='referral';therapistModal=true;}}><Plus size={18}/>Tambah Referral</button>{/if}</div>{/if}
 {#if failure}<div class="notice error" role="alert">{failure}<button onclick={()=>failure=''} aria-label="Tutup pesan"><X size={16}/></button></div>{/if}{#if notice}<div class="notice" role="status">{notice}<button onclick={()=>notice=''} aria-label="Tutup pesan"><X size={16}/></button></div>{/if}
 {#if page==='Ringkasan'}{#if isCustomer}<section class="welcome"><div><span class="pill">JEDA SEJENAK, NYAMAN KEMBALI</span><h2>Lepas lelah. Temukan nyaman.</h2><button onclick={()=>page='Reservasi'}>Lihat reservasi <ArrowUpRight size={17}/></button></div><Leaf class="hero-leaf" size={160} strokeWidth={0.8}/></section>{/if}<div class="stats"><article><span>Reservasi{isCustomer?' saya':''}</span><strong>{appointments.length}</strong></article><article><span>Menunggu</span><strong>{appointments.filter(a=>a.status==='pending').length}</strong></article><article><span>Sedang berlangsung</span><strong>{appointments.filter(a=>a.status==='in_progress').length}</strong></article><article><span>Selesai</span><strong>{appointments.filter(a=>a.status==='completed').length}</strong></article></div>{/if}
@@ -112,7 +113,7 @@
 {#if page==='Kelola Akun'&&isAdmin}<section class="panel"><div class="search"><Search size={18}/><input bind:value={search} placeholder="Cari nama, email, atau peran…" aria-label="Cari akun"/></div><div class="table-wrap"><table><thead><tr><th>AKUN</th><th>PERAN</th><th>STATUS</th><th>AKSES</th></tr></thead><tbody>{#each visibleAccounts as a}<tr><td><strong>{a.full_name||'Nama belum diisi'}</strong><small>{a.email}</small></td><td>{#if a.id===profile.id}<span class="role-badge">Administrator</span>{:else}<select class="role-select" aria-label={'Peran '+a.email} value={a.role} disabled={busy} onchange={e=>updateAccount(a,e.currentTarget.value,a.active)}><option value="customer">Customer</option><option value="therapist">Terapis</option><option value="referral">Referral</option><option value="administrator">Administrator</option></select>{/if}</td><td><span class="status" class:completed={a.active} class:cancelled={!a.active}>{a.active?'Aktif':'Nonaktif'}</span></td><td>{#if a.id!==profile.id}<button class="outline" disabled={busy} onclick={()=>updateAccount(a,a.role,!a.active)}>{a.active?'Nonaktifkan':'Aktifkan'}</button>{:else}<span class="muted">Akun Anda dilindungi</span>{/if}</td></tr>{:else}<tr><td colspan="4" class="empty">Tidak ada akun yang cocok.</td></tr>{/each}</tbody></table></div></section>{/if}
 {#if page==='Keuangan'&&isAdmin}<Finance onback={()=>{page='Ringkasan';window.scrollTo({top:0,behavior:'instant'});}}/>{/if}
 {#if page==='Profil Saya'}<section class="panel profile-panel"><h2>Profil saya</h2><p class="muted">Peran: <strong>{ROLE_LABEL[profile.role]}</strong></p><form onsubmit={e=>{e.preventDefault();saveProfile();}}><label>Email<input value={profile.email} disabled/></label><label>Nama lengkap<input required maxlength="100" bind:value={name} autocomplete="name"/></label><label>Nomor WhatsApp<input maxlength="25" type="tel" pattern="[+0-9 ()-]*" bind:value={phone} autocomplete="tel"/></label><button class="primary" disabled={busy}>{busy?'Menyimpan…':'Simpan profil'}</button></form></section>{/if}
-{#if page!=='Keuangan'}<footer><span>© 2026 HEIJO Reflexology</span><span>Saatnya melepas lelah.</span></footer>{/if}</div></main></div>
+{#if !page}<footer><span>© 2026 HEIJO Reflexology</span><span>Saatnya melepas lelah.</span></footer>{/if}</div></main></div>
 {#if serviceForm && isAdmin}
 <div class="overlay" role="presentation">
  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="service-title" tabindex="-1">
@@ -186,4 +187,5 @@ label textarea{width:100%;padding:13px;border:1px solid #c6d4ca;border-radius:10
 .brand-name{background-size:220% auto;background-position:center 50%;border-radius:0}
 @media(max-width:760px){.account-head{padding:22px 16px}.account-name{font-size:18px}.account-role{font-size:12px}.brand-name{width:clamp(124px,37vw,180px)}}
 .finance-screen{min-height:100dvh;padding-top:20px}
+.feature-back{min-height:44px;margin-bottom:20px;font-weight:750;color:#00543b;padding:10px 0}
 </style>

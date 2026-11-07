@@ -1,5 +1,6 @@
 <script>
  import {onMount} from 'svelte';
+ import PeriodPicker from './PeriodPicker.svelte';
  import {api} from './auth.js';
 
  export let admin=false;
@@ -12,7 +13,8 @@
  const currentMonth=parts.find(part=>part.type==='year').value+'-'+parts.find(part=>part.type==='month').value;
  const money=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
  const date=new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeZone});
- let month=currentMonth, report=null, busy=false, error='';
+ export let month='';
+ let report=null, busy=false, error='';
 
  async function load(){
   report=null;
@@ -29,13 +31,13 @@
   }catch(e){error=e.message;}finally{busy=false;}
  }
 
- onMount(()=>{load();});
+ onMount(()=>{if(!month)month=currentMonth;load();});
 </script>
 
 {#if admin}<button class="back" disabled={busy} onclick={()=>selected?openTherapist(null):onback()}>← {selected?'Daftar terapis':'Keuangan'}</button>{/if}
+<PeriodPicker bind:month disabled={busy} onchange={next=>{month=next;load();}}/>
 <section aria-label="Pendapatan terapis">
  {#if admin}<h2>{selected?selected.name:'Fee Terapis'}</h2>{/if}
- <label>Periode <input type="month" bind:value={month} max={currentMonth} disabled={busy} onchange={load}/></label>
  {#if error}<p role="alert">{error} <button onclick={load}>Coba lagi</button></p>{/if}
  {#if busy}<p role="status">Memuat pendapatan…</p>{/if}
  {#if admin && !selected && !busy && !error}
@@ -68,8 +70,7 @@
  .back{margin-bottom:18px;min-height:44px;font-weight:750}
 
  section{background:#fff;border:1px solid #d3ddcd;border-radius:18px;padding:22px;color:#163c2a}
- label{display:grid;gap:7px;font-weight:750;margin-bottom:18px}
- input,button{padding:10px 12px;border:1px solid #b9cfba;border-radius:8px;background:#fff;color:#163c2a}
+ button{padding:10px 12px;border:1px solid #b9cfba;border-radius:8px;background:#fff;color:#163c2a}
  h2{margin:24px 0 10px;font-size:19px}
  .total,.row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
  .total{border-radius:10px;background:#00543b;color:#fff;padding:15px}
