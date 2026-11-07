@@ -72,6 +72,8 @@
 </section>
 
 <style>
+ section,.total{background:#004b35!important;color:#f5d47b!important;border-color:#c9a754!important}
+ section h2,section h3,section .row,section small,section strong,section span{color:#f5d47b!important}
  section{border:1px solid #d3ddcd;border-radius:18px;background:#fff;padding:22px;color:#163c2a}
  h2{margin:0 0 20px;font-size:19px}
  h3{margin-top:24px;font-size:16px}

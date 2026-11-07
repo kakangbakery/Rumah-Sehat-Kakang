@@ -76,6 +76,8 @@
 </section>
 
 <style>
+ section,.therapist,.total{background:#004b35!important;color:#f5d47b!important;border-color:#c9a754!important}
+ section h2,section h3,section .row,section p,section strong,section span{color:#f5d47b!important}
  .back{margin-bottom:18px;min-height:44px;font-weight:750}
 
  section{background:#fff;border:1px solid #d3ddcd;border-radius:18px;padding:22px;color:#163c2a}

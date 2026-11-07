@@ -123,6 +123,8 @@
 
 </div>
 <style>
+ .finance-menu button,section{background:#004b35!important;color:#f5d47b!important;border-color:#c9a754!important}
+ section h2,section h3,section label,section .summary-row,section .totals,section .allocation{color:#f5d47b!important}
  .finance-screen{min-height:calc(100dvh - 60px)}
  h1{margin:24px 0;font-size:28px;color:#004c35}
  .back{margin-bottom:18px;min-height:44px;font-weight:750}
