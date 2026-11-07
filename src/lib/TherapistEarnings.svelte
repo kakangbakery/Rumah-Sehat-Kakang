@@ -3,6 +3,8 @@
  import {api} from './auth.js';
 
  export let admin=false;
+ export let onback=()=>{};
+ function openTherapist(therapist){selected=therapist;window.scrollTo({top:0,behavior:"instant"});load();}
  let therapists=[], selected=null;
 
  const timeZone='Asia/Jakarta';
@@ -30,17 +32,15 @@
  onMount(()=>{load();});
 </script>
 
+{#if admin}<button class="back" disabled={busy} onclick={()=>selected?openTherapist(null):onback()}>← {selected?'Daftar terapis':'Keuangan'}</button>{/if}
 <section aria-label="Pendapatan terapis">
- {#if admin}<h2>Fee Terapis</h2>{/if}
- <label>Periode <input type="month" bind:value={month} max={currentMonth} disabled={busy} onchange={()=>{selected=null;therapists=[];load();}}/></label>
+ {#if admin}<h2>{selected?selected.name:'Fee Terapis'}</h2>{/if}
+ <label>Periode <input type="month" bind:value={month} max={currentMonth} disabled={busy} onchange={load}/></label>
  {#if error}<p role="alert">{error} <button onclick={load}>Coba lagi</button></p>{/if}
  {#if busy}<p role="status">Memuat pendapatan…</p>{/if}
- {#if admin && selected}
-  <button disabled={busy} onclick={()=>{selected=null;load();}}>Kembali ke daftar terapis</button>
-  <h2>{selected.name}</h2>
- {:else if admin && !busy && !error}
+ {#if admin && !selected && !busy && !error}
   {#each therapists as therapist (therapist.id)}
-   <button class="therapist" onclick={()=>{selected=therapist;load();}}>{therapist.name}</button>
+   <button class="therapist" disabled={busy} onclick={()=>openTherapist(therapist)}>{therapist.name}</button>
   {:else}<p>Belum ada terapis dengan reservasi selesai pada periode ini.</p>{/each}
  {/if}
  {#if report}
@@ -65,6 +65,8 @@
 </section>
 
 <style>
+ .back{margin-bottom:18px;min-height:44px;font-weight:750}
+
  section{background:#fff;border:1px solid #d3ddcd;border-radius:18px;padding:22px;color:#163c2a}
  label{display:grid;gap:7px;font-weight:750;margin-bottom:18px}
  input,button{padding:10px 12px;border:1px solid #b9cfba;border-radius:8px;background:#fff;color:#163c2a}

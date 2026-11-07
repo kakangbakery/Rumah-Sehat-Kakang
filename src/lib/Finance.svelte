@@ -4,6 +4,8 @@
  import Income from './Income.svelte';
  import {api} from './auth.js';
 
+ export let onback=()=>{};
+ function openView(next){view=next;window.scrollTo({top:0,behavior:'instant'});}
  let view='',saved=null,period='';
  let items=[],revision='',income=0,busy=false,error='',message='';
  const currency=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
@@ -48,13 +50,20 @@
  }
 </script>
 
+<div class="finance-screen">
+{#if view!=='therapist-fees'}
+<button class="back" disabled={busy} onclick={()=>view?openView(''):onback()}>← {view?'Keuangan':'Menu utama'}</button>
+{/if}
+{#if !view}
+<h1>Keuangan</h1>
 <nav class="finance-menu" aria-label="Menu Keuangan">
- <button class:save={view==='simulation'} aria-pressed={view==='simulation'} onclick={()=>view='simulation'}>Simulasi</button>
- <button class:save={view==='allocation'} aria-pressed={view==='allocation'} onclick={()=>view='allocation'}>Alokasi Dana</button>
- <button class:save={view==='income'} aria-pressed={view==='income'} onclick={()=>view='income'}>Pemasukan</button>
- <button class:save={view==='distribution'} aria-pressed={view==='distribution'} onclick={()=>view='distribution'}>Rincian Pembagian</button>
- <button class:save={view==='therapist-fees'} aria-pressed={view==='therapist-fees'} onclick={()=>view='therapist-fees'}>Fee Terapis</button>
+ <button class:save={view==='simulation'} aria-pressed={view==='simulation'} onclick={()=>openView('simulation')}>Simulasi</button>
+ <button class:save={view==='allocation'} aria-pressed={view==='allocation'} onclick={()=>openView('allocation')}>Alokasi Dana</button>
+ <button class:save={view==='income'} aria-pressed={view==='income'} onclick={()=>openView('income')}>Pemasukan</button>
+ <button class:save={view==='distribution'} aria-pressed={view==='distribution'} onclick={()=>openView('distribution')}>Rincian Pembagian</button>
+ <button class:save={view==='therapist-fees'} aria-pressed={view==='therapist-fees'} onclick={()=>openView('therapist-fees')}>Fee Terapis</button>
 </nav>
+{/if}
 
 {#if view==='simulation'}
 <section aria-label="Simulasi">
@@ -102,16 +111,21 @@
  {:else}<p>Memuat alokasi dana…</p>{/if}
 </section>
 {:else if view==='therapist-fees'}
- <TherapistEarnings admin/>
+ <TherapistEarnings admin onback={()=>openView('')}/>
 {:else if view==='income'||view==='distribution'}
 {#key view}
  <Income simulation={saved} showAllocation={view==='distribution'} bind:month={period}/>
 {/key}
 {/if}
 
+</div>
 <style>
+ .finance-screen{min-height:calc(100dvh - 60px)}
+ h1{margin:24px 0;font-size:28px;color:#004c35}
+ .back{margin-bottom:18px;min-height:44px;font-weight:750}
+
  .finance-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
- .finance-menu button{min-height:82px;border-radius:18px}
+ .finance-menu button{min-height:110px;border-radius:18px}
  .summary-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e4ecdf}
  .summary-row dt{overflow-wrap:anywhere;min-width:0}
  .summary-row small{display:block;margin-top:4px}
