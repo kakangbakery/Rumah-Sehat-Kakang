@@ -1,12 +1,15 @@
 <script>
+ import {page as route} from '$app/stores';
+ import {openScreen,backScreen} from './navigation.js';
  import {onMount} from 'svelte';
  import TherapistEarnings from './TherapistEarnings.svelte';
  import Income from './Income.svelte';
  import {api} from './auth.js';
 
  export let onback=()=>{};
- function openView(next){view=next;window.scrollTo({top:0,behavior:'instant'});}
- let view='',saved=null,period='';
+ function openView(next){return openScreen({finance:next,therapist:null},{therapistName:null});}
+ $: view=$route.url.searchParams.get('finance')||'';
+ let saved=null,period='';
  let items=[],revision='',income=0,busy=false,error='',message='';
  const currency=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
  const percentageTotal=rows=>rows.reduce((sum,item)=>sum+Math.round((item.percent??0)*100),0)/100;
@@ -52,7 +55,7 @@
 
 <div class="finance-screen">
 {#if view!=='therapist-fees'}
-<button class="back" disabled={busy} onclick={()=>view?openView(''):onback()}>← {view?'Keuangan':'Menu utama'}</button>
+<button class="back" disabled={busy} onclick={()=>view?backScreen({finance:null,therapist:null}):onback()}>← {view?'Keuangan':'Menu utama'}</button>
 {/if}
 {#if !view}
 <h1>Keuangan</h1>
@@ -111,7 +114,7 @@
  {:else}<p>Memuat alokasi dana…</p>{/if}
 </section>
 {:else if view==='therapist-fees'}
- <TherapistEarnings admin bind:month={period} onback={()=>openView('')}/>
+ <TherapistEarnings admin bind:month={period} onback={()=>backScreen({finance:null,therapist:null})}/>
 {:else if view==='income'||view==='distribution'}
 {#key view}
  <Income simulation={saved} showAllocation={view==='distribution'} bind:month={period}/>

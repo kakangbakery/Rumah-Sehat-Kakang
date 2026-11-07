@@ -1,12 +1,18 @@
 <script>
+ import {page as route} from '$app/stores';
+ import {openScreen,backScreen} from './navigation.js';
  import {onMount} from 'svelte';
  import PeriodPicker from './PeriodPicker.svelte';
  import {api} from './auth.js';
 
  export let admin=false;
  export let onback=()=>{};
- function openTherapist(therapist){selected=therapist;window.scrollTo({top:0,behavior:"instant"});load();}
- let therapists=[], selected=null;
+ function openTherapist(therapist){return openScreen({therapist:therapist.id},{therapistName:therapist.name});}
+ $: selected=admin&&$route.url.searchParams.get('therapist')?{id:$route.url.searchParams.get('therapist'),name:$route.state.therapistName||'Rincian fee terapis'}:null;
+ $: selectedId=selected?.id||'';
+ let mounted=false;
+ $: if(mounted){selectedId;load();}
+ let therapists=[];
 
  const timeZone='Asia/Jakarta';
  const parts=new Intl.DateTimeFormat('en-GB',{year:'numeric',month:'2-digit',timeZone}).formatToParts();
@@ -14,9 +20,10 @@
  const money=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0});
  const date=new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeZone});
  export let month='';
- let report=null, busy=false, error='';
+ let report=null, busy=false, error='',request=0;
 
  async function load(){
+  const currentRequest=++request;
   report=null;
   error='';
   if(!month)return;
@@ -24,17 +31,19 @@
   try{
    const query='?month='+encodeURIComponent(month);
    if(admin && !selected){
-    therapists=await api('/finance/therapist-fees'+query);
+    const result=await api('/finance/therapist-fees'+query);
+    if(currentRequest===request)therapists=result;
    }else{
-    report=await api(admin?'/finance/therapist-fees'+query+'&therapist='+selected.id:'/therapist/earnings'+query);
+    const result=await api(admin?'/finance/therapist-fees'+query+'&therapist='+selected.id :'/therapist/earnings'+query);
+    if(currentRequest===request)report=result;
    }
-  }catch(e){error=e.message;}finally{busy=false;}
+  }catch(e){if(currentRequest===request)error=e.message;}finally{if(currentRequest===request)busy=false;}
  }
 
- onMount(()=>{if(!month)month=currentMonth;load();});
+ onMount(()=>{if(!month)month=currentMonth;mounted=true;return()=>{mounted=false;request++;};});
 </script>
 
-{#if admin}<button class="back" disabled={busy} onclick={()=>selected?openTherapist(null):onback()}>← {selected?'Daftar terapis':'Keuangan'}</button>{/if}
+{#if admin}<button class="back" disabled={busy} onclick={()=>selected?backScreen({therapist:null}):onback()}>← {selected?'Daftar terapis':'Keuangan'}</button>{/if}
 <PeriodPicker bind:month disabled={busy} onchange={next=>{month=next;load();}}/>
 <section aria-label="Pendapatan terapis">
  {#if admin}<h2>{selected?selected.name:'Fee Terapis'}</h2>{/if}
