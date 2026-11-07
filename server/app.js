@@ -120,6 +120,11 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
  }
  app.post('/api/accounts/therapists',allowRoles('administrator'),createStaff);
  app.post('/api/accounts/referrals',allowRoles('administrator'),createStaff);
+ app.patch('/api/accounts/:id/pin',allowRoles('administrator'),async(req,res)=>{
+  if(!uuid.test(req.params.id)||typeof req.body?.pin!=='string'||!/^\d{6}$/.test(req.body.pin))return res.status(400).json({error:'Pilih terapis dan masukkan PIN 6 angka.'});
+  const {error}=await req.db.rpc('set_therapist_pin',{target_id:req.params.id,new_pin:req.body.pin});
+  if(error)return safeError(res,error);res.json({ok:true});
+ });
  app.patch('/api/accounts/:id',allowRoles('administrator'),async(req,res)=>{
   if(!uuid.test(req.params.id)||!['administrator','therapist','customer','referral'].includes(req.body?.role)||typeof req.body?.active!=='boolean')return res.status(400).json({error:'Peran atau status akun tidak valid.'});
   const {error}=await req.db.rpc('manage_account',{target_id:req.params.id,new_role:req.body.role,is_active:req.body.active});
