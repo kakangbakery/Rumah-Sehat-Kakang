@@ -125,6 +125,16 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   const {error}=await req.db.rpc('manage_account',{target_id:req.params.id,new_role:req.body.role,is_active:req.body.active});
   if(error)return safeError(res,error);res.json({ok:true});
  });
+ app.patch('/api/access-pins',allowRoles('administrator'),async(req,res)=>{
+  const pins=req.body?.pins;
+  if(!pins||typeof pins!=='object'||Array.isArray(pins))return res.status(400).json({error:'Data PIN tidak valid.'});
+  for(const [role,pin] of Object.entries(pins)){
+   if(!['administrator','therapist','customer','referral'].includes(role)||typeof pin!=='string'||!/^\d{6}$/.test(pin))return res.status(400).json({error:'Setiap PIN harus tepat 6 angka.'});
+   const {error}=await req.db.rpc('set_portal_pin',{target_role:role,new_pin:pin});
+   if(error)return safeError(res,error);
+  }
+  res.json({ok:true});
+ });
  app.patch('/api/appointments/:id/therapist',allowRoles('administrator'),async(req,res)=>{
   if(!uuid.test(req.params.id)||!uuid.test(req.body?.therapist_id))return res.status(400).json({error:'Pilih terapis yang valid.'});
   const {error}=await req.db.rpc('assign_therapist',{appointment_id:req.params.id,new_therapist_id:req.body.therapist_id});
