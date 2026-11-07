@@ -97,11 +97,11 @@
 <svelte:head><title>Dashboard {ROLE_LABEL[expectedRole]} — HEIJO Reflexology</title><meta name="robots" content="noindex,nofollow"/></svelte:head>
 {#if loading}<div class="loading"><Leaf size={38}/><h1>Menyiapkan dashboard…</h1><p>Memeriksa sesi dan hak akses Anda.</p></div>{:else if !profile}<div class="loading"><h1>Login diperlukan</h1><p>{failure||'Masuk untuk melanjutkan.'}</p><a href="/">Ke halaman login</a></div>{:else}
 <div class="top-band" aria-hidden="true"></div>
-<div class="app"><main><div class="content">
+<div class="app"><main>
 <header class="account-head">
  <div class="identity"><div class="identity-copy"><a class="brand-name" href={ROLE_PATH[profile.role]} aria-label="HEIJO Reflexology"></a><div class="account-role">{ROLE_LABEL[profile.role]}</div><p class="account-name">{profile.full_name||'Akun Saya'}</p></div></div>
  <div class="account-actions">{#if !isReferral}<button class="icon-button" onclick={()=>{page='Reservasi';search='';}} aria-label="Cari reservasi"><Search size={23}/></button>{/if}<button class="icon-button refresh" disabled={busy} onclick={()=>act(async()=>{},'Data diperbarui.')} aria-label="Perbarui data"><RefreshCw size={22}/></button><button class="exit-button" disabled={busy} onclick={logout}><LogOut size={17}/><span>Keluar</span></button></div>
-</header>
+</header><div class="content">
 <nav class="menu-grid" aria-label="Menu utama">{#each menu as item}<button class:active={page===item.name} aria-pressed={page===item.name} onclick={()=>{page=item.name;search='';}}>{#if item.icon}<item.icon size={23}/>{/if}<span>{item.name}</span></button>{/each}</nav>
 <div class="heading"><div><p class="eyebrow">HEIJO REFLEXOLOGY</p><h1>{page==='Ringkasan'?'Selamat datang, '+(profile.full_name||'Kakang'):page}<span class="gold">.</span></h1></div>{#if page==='Reservasi'&&!isTherapist}<button class="primary" onclick={openBooking}><Plus size={18}/>Reservasi baru</button>{:else if page==='Layanan'&&isAdmin}<button class="primary" onclick={()=>editService(null)}><Plus size={18}/>Tambah Layanan</button>{:else if page==='Kelola Akun'&&isAdmin}<button class="primary" onclick={()=>{failure='';staffRole='therapist';therapistModal=true;}}><Plus size={18}/>Tambah Terapis</button><button class="primary" onclick={()=>{failure='';staffRole='referral';therapistModal=true;}}><Plus size={18}/>Tambah Referral</button>{/if}</div>
 {#if failure}<div class="notice error" role="alert">{failure}<button onclick={()=>failure=''} aria-label="Tutup pesan"><X size={16}/></button></div>{/if}{#if notice}<div class="notice" role="status">{notice}<button onclick={()=>notice=''} aria-label="Tutup pesan"><X size={16}/></button></div>{/if}
@@ -176,5 +176,13 @@ th,.role-badge,.role-select {
 }
 .service-delete{color:#96391f;border-color:#e3b9a8}
 label textarea{width:100%;padding:13px;border:1px solid #c6d4ca;border-radius:10px;font:inherit;color:#163e2c;resize:vertical}.booking-detail{white-space:pre-wrap;max-width:240px;overflow-wrap:anywhere}
-.brand-name{display:block;width:100%;aspect-ratio:3.5;background:#fff url('/heijo-logo.jpg') center 52% / 220% auto no-repeat;border-radius:7px;text-decoration:none;width:clamp(112px,34vw,165px)}
+.brand-name{display:block;width:100%;aspect-ratio:3.5;background:#004326 url('/heijo-gold.jpg') center 52% / 220% auto no-repeat;border-radius:7px;text-decoration:none;width:clamp(112px,34vw,165px)}
+
+.top-band{display:none}
+.account-head{background:#004326;padding:24px max(16px,calc((100vw - 1020px)/2));margin:0;border-bottom:2px solid #c7a247;gap:12px}
+.account-role,.account-name{color:#fff}
+.account-role{margin-top:12px}
+.account-head .icon-button,.account-head .exit-button{background:#ffffff0d;border-color:#d8bd6a88;color:#fff;box-shadow:none}
+.brand-name{background-size:220% auto;background-position:center 50%;border-radius:0}
+@media(max-width:760px){.account-head{padding:22px 16px}.account-name{font-size:18px}.account-role{font-size:12px}.brand-name{width:clamp(124px,37vw,180px)}}
 </style>
