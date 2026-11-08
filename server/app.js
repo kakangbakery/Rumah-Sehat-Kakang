@@ -28,6 +28,24 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   }catch{res.status(503).json({error:'Layanan login sementara tidak tersedia.'});}
  });
  app.get('/api/me',(req,res)=>res.json({profile:req.profile}));
+ app.get('/api/sop',allowRoles('administrator'),async(req,res)=>{
+  const {data,error}=await req.db.from('sop_entries').select('id,category,title,body,revision,created_at').order('created_at');
+  if(error)return safeError(res,error);res.json({entries:data});
+ });
+ async function saveSop(req,res){
+  const {category,title,body,revision}=req.body||{};const id=req.params.id;
+  if(!['heijo','terapis','customer'].includes(category)||typeof title!=='string'||!title.trim()||title.trim().length>150||typeof body!=='string'||!body.trim()||body.trim().length>20000||(id&&(!uuid.test(id)||!uuid.test(revision))))return res.status(400).json({error:'Lengkapi judul dan isi SOP.'});
+  const fields={category,title:title.trim(),body:body.trim(),revision:randomUUID()};
+  const query=id?req.db.from('sop_entries').update(fields).eq('id',id).eq('revision',revision):req.db.from('sop_entries').insert({...fields,is_demo:req.profile.is_demo});
+  const {data,error}=await query.select('id').maybeSingle();if(error)return safeError(res,error);if(!data)return res.status(409).json({error:'SOP telah berubah. Muat ulang sebelum menyimpan.'});res.status(id?200:201).json({id:data.id});
+ }
+ app.post('/api/sop',allowRoles('administrator'),saveSop);
+ app.patch('/api/sop/:id',allowRoles('administrator'),saveSop);
+ app.delete('/api/sop/:id',allowRoles('administrator'),async(req,res)=>{
+  if(!uuid.test(req.params.id)||!uuid.test(req.body?.revision))return res.status(400).json({error:'SOP tidak valid.'});
+  const {data,error}=await req.db.from('sop_entries').delete().eq('id',req.params.id).eq('revision',req.body.revision).select('id').maybeSingle();
+  if(error)return safeError(res,error);if(!data)return res.status(409).json({error:'SOP telah berubah. Muat ulang halaman.'});res.json({ok:true});
+ });
  app.patch('/api/me',async(req,res)=>{
   const {full_name,phone}=req.body||{};
   if(typeof full_name!=='string'||!full_name.trim()||full_name.length>100||typeof phone!=='string'||phone.length>25||!/^[+\d ()-]*$/.test(phone))return res.status(400).json({error:'Nama atau nomor telepon tidak valid.'});
