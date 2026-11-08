@@ -24,7 +24,7 @@
  const dateText=d=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',dateStyle:'medium',timeStyle:'short'}).format(new Date(d))+' WIB';
  const initials=n=>(n||'A').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
  $: page=$route.url.searchParams.get('screen')||'';
- function openPage(next){search='';return openScreen({screen:next,finance:null,therapist:null,sop:null},{therapistName:null});}
+ function openPage(next){search='';return openScreen({screen:next,finance:null,therapist:null,sop:null,sopItem:null},{therapistName:null});}
  $: isAdmin=profile?.role==='administrator';
  $: isCustomer=profile?.role==='customer';
  $: isTherapist=profile?.role==='therapist';
