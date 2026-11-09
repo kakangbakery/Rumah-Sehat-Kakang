@@ -12,6 +12,7 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
  app.disable('x-powered-by');
  if(process.env.VERCEL) app.set('trust proxy',1);
  app.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('X-Content-Type-Options','nosniff');next();});
+ app.use('/api/catalog',express.json({limit:'500kb'}));
  app.use(express.json({limit:'16kb'}));
  app.get('/api/health',(_req,res)=>res.json({status:'ok',application:'refleksi-kakang',mode:'rbac'}));
  if(limiter)app.use('/api',rateLimit({windowMs:60000,limit:120,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'Terlalu banyak permintaan. Coba lagi sebentar.'}}));
@@ -28,6 +29,34 @@ export function createApp({makeClient=(token)=>createClient(SUPABASE_URL,SUPABAS
   }catch{res.status(503).json({error:'Layanan login sementara tidak tersedia.'});}
  });
  app.get('/api/me',(req,res)=>res.json({profile:req.profile}));
+ app.get('/api/catalog',allowRoles('administrator','customer'),async(req,res)=>{
+  const {data,error}=await req.db.from('catalog_products').select('id,name,description,price,image,active,revision,created_at').eq('is_demo',req.profile.is_demo).eq('active',true).order('created_at',{ascending:false});
+  if(error)return safeError(res,error);res.json({products:data});
+ });
+ async function saveProduct(req,res){
+  const {name,description,price,image,revision}=req.body||{};const id=req.params.id;
+  if(typeof name!=='string'||!name.trim()||name.trim().length>120||typeof description!=='string'||description.length>3000||!Number.isInteger(price)||price<0||price>2147483647||typeof image!=='string'||image.length>400000||(image&&!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image))||(id&&(!uuid.test(id)||!uuid.test(revision))))return res.status(400).json({error:'Periksa nama, deskripsi, harga, dan foto produk.'});
+  const values={name:name.trim(),description:description.trim(),price,image,revision:randomUUID()};
+  const query=id?req.db.from('catalog_products').update(values).eq('id',id).eq('revision',revision):req.db.from('catalog_products').insert({...values,is_demo:req.profile.is_demo});
+  const {data,error}=await query.select('id').maybeSingle();if(error)return safeError(res,error);if(!data)return res.status(409).json({error:'Produk berubah. Muat ulang sebelum menyimpan.'});res.status(id?200:201).json({id:data.id});
+ }
+ app.post('/api/catalog',allowRoles('administrator'),saveProduct);
+ app.patch('/api/catalog/:id',allowRoles('administrator'),saveProduct);
+ app.delete('/api/catalog/:id',allowRoles('administrator'),async(req,res)=>{
+  if(!uuid.test(req.params.id)||!uuid.test(req.body?.revision))return res.status(400).json({error:'Produk tidak valid.'});
+  const {data,error}=await req.db.from('catalog_products').update({active:false,revision:randomUUID()}).eq('id',req.params.id).eq('revision',req.body.revision).select('id').maybeSingle();
+  if(error)return safeError(res,error);if(!data)return res.status(409).json({error:'Produk berubah. Muat ulang halaman.'});res.json({ok:true});
+ });
+ app.post('/api/product-orders',allowRoles('customer'),async(req,res)=>{
+  const {customer_name,phone,address,cart}=req.body||{};
+  if(typeof customer_name!=='string'||typeof phone!=='string'||typeof address!=='string'||!Array.isArray(cart))return res.status(400).json({error:'Lengkapi data dan keranjang.'});
+  const {data,error}=await req.db.rpc('checkout_products',{customer_name,phone,address,cart});
+  if(error)return res.status(400).json({error:'Pesanan belum dapat dikirim. Periksa data atau ketersediaan produk.'});res.status(201).json({id:data});
+ });
+ app.get('/api/product-orders',allowRoles('administrator'),async(req,res)=>{
+  const {data,error}=await req.db.from('product_orders').select('id,customer_name,phone,address,items,total,status,created_at').eq('is_demo',req.profile.is_demo).order('created_at',{ascending:false}).limit(200);
+  if(error)return safeError(res,error);res.json({orders:data});
+ });
  app.get('/api/sop',allowRoles('administrator'),async(req,res)=>{
   const {data,error}=await req.db.from('sop_entries').select('id,category,title,body,revision,created_at').order('created_at');
   if(error)return safeError(res,error);res.json({entries:data});

@@ -4,7 +4,7 @@ import {createApp} from '../server/app.js';
 const userId='11111111-1111-4111-8111-111111111111';
 function fakeClient(token){
  const role=['administrator','therapist','customer'].includes(token)?token:'customer';
- return {auth:{getUser:async()=>({data:{user:token==='invalid'?null:{id:userId,email_confirmed_at:new Date().toISOString()}},error:token==='invalid'?new Error():null})},from(table){return {select(){return this;},eq(){return this;},order(){return this;},limit(){return Promise.resolve({data:[],error:null});},single:async()=>({data:{id:userId,role,active:token!=='inactive'},error:null})};}};
+ return {auth:{getUser:async()=>({data:{user:token==='invalid'?null:{id:userId,email_confirmed_at:new Date().toISOString()}},error:token==='invalid'?new Error():null})},rpc:async(name,args)=>({data:name==='checkout_products'&&args.cart.length?userId:null,error:null}),from(table){return {select(){return this;},insert(){return this;},update(){return this;},eq(){return this;},order(){return this;},limit(){return Promise.resolve({data:[],error:null});},maybeSingle:async()=>({data:{id:userId},error:null}),single:async()=>({data:{id:userId,role,active:token!=='inactive'},error:null})};}};
 }
 async function withServer(fn){const server=createApp({makeClient:fakeClient,limiter:false}).listen(0);await new Promise(r=>server.once('listening',r));try{await fn('http://127.0.0.1:'+server.address().port);}finally{await new Promise(r=>server.close(r));}}
 const request=(url,path,token,options={})=>fetch(url+path,{...options,headers:{...(token?{Authorization:'Bearer '+token}:{}),'Content-Type':'application/json'}});
@@ -30,4 +30,15 @@ test('invalid appointment parameters and oversized/malformed bodies are rejected
  assert.equal((await request(url,'/api/appointments','customer',{method:'POST',body:'{}'})).status,400);
  assert.equal((await request(url,'/api/me','customer',{method:'PATCH',body:'{bad json'})).status,400);
  assert.equal((await request(url,'/api/me','customer',{method:'PATCH',body:JSON.stringify({full_name:'a'.repeat(20000),phone:''})})).status,413);
+}));
+test('catalog writes and product orders are limited to the correct roles',()=>withServer(async url=>{
+ assert.equal((await request(url,'/api/catalog','customer',{method:'POST',body:'{}'})).status,403);
+ assert.equal((await request(url,'/api/catalog/'+userId,'customer',{method:'DELETE',body:'{}'})).status,403);
+ assert.equal((await request(url,'/api/product-orders','customer')).status,403);
+ assert.equal((await request(url,'/api/product-orders','therapist',{method:'POST',body:'{}'})).status,403);
+ assert.equal((await request(url,'/api/catalog','administrator',{method:'POST',body:JSON.stringify({name:'Madu',price:-1,description:'',image:''})})).status,400);
+}));
+test('administrator can add a catalog item and customer can submit a cart',()=>withServer(async url=>{
+ const p=await request(url,'/api/catalog','administrator',{method:'POST',body:JSON.stringify({name:'Madu',price:60000,description:'Madu',image:''})});assert.equal(p.status,201);
+ const o=await request(url,'/api/product-orders','customer',{method:'POST',body:JSON.stringify({customer_name:'Pembeli',phone:'081234567890',address:'Alamat',cart:[{id:userId,quantity:2,price:60000}]})});assert.equal(o.status,201);assert.equal((await o.json()).id,userId);
 }));
